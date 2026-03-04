@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sher Jag Gaya Hai</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --card-bg: #161616;
+            --accent-color: #ffcc00;
+            --text-main: #ffffff;
+            --text-dim: #a0a0a0;
+            --border-color: #333;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header { text-align: center; margin-bottom: 30px; }
+        h1 {
+            font-size: clamp(2rem, 8vw, 3.5rem);
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            margin: 10px 0;
+            text-shadow: 0 0 15px rgba(255, 204, 0, 0.4);
+        }
+
+        .lion-icon { font-size: 4rem; display: block; }
+
+        .progress-container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--border-color);
+            height: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--accent-color);
+            transition: width 0.4s ease;
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        .subject-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 25px;
+            width: 100%;
+            max-width: 1300px;
+            flex-grow: 1;
+        }
+
+        .subject-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1;
+        }
+
+        /* "In Your Face" Expanded State */
+        .subject-card.expanded {
+            position: fixed;
+            top: 5%;
+            left: 5%;
+            width: 90%;
+            height: 90%;
+            max-height: 90vh;
+            z-index: 9999;
+            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+            border-color: var(--accent-color);
+        }
+
+        /* Overlay Background when expanded */
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(5px);
+            z-index: 9998;
+        }
+
+        #overlay.active { display: block; }
+
+        /* Custom Scrollbar */
+        .subject-card::-webkit-scrollbar { width: 5px; }
+        .subject-card::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+
+        .subject-title {
+            position: sticky;
+            top: 0;
+            background: var(--card-bg);
+            color: var(--accent-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            z-index: 10;
+        }
+
+        .expand-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+        }
+
+        .expand-btn:hover { transform: scale(1.1); }
+
+        .expand-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--accent-color);
+        }
+
+        .section-h {
+            color: #ff6600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            margin: 15px 0 5px 5px;
+            padding-left: 8px;
+            border-left: 3px solid #ff6600;
+        }
+
+        .lang-inline-select {
+            background: #222;
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
+            border-radius: 4px;
+            padding: 2px 5px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .chapter-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #222;
+            cursor: pointer;
+        }
+
+        .chapter-item:hover { background: #1f1f1f; }
+
+        input[type="checkbox"] {
+            margin-right: 15px;
+            pointer-events: none;
+            accent-color: var(--accent-color);
+            transform: scale(1.3);
+        }
+
+        .chapter-name { font-size: 0.9rem; color: var(--text-dim); flex: 1; }
+
+        input:checked + .chapter-name {
+            text-decoration: line-through;
+            opacity: 0.3;
+        }
+
+        .date-badge { font-size: 0.85rem; color: #777; font-weight: normal; }
+
+        footer {
+            margin-top: 50px;
+            padding: 20px;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 800px;
+        }
+
+        footer b { color: var(--accent-color); }
+    </style>
+</head>
+<body>
+
+    <div id="overlay" onclick="closeAllCards()"></div>
+
+    <header>
+        <span class="lion-icon">🦁</span>
+        <h1>Sher Jag Gaya Hai</h1>
+    </header>
+
+    <div class="progress-container">
+        <div id="progress-bar"></div>
+    </div>
+    <p id="stats" style="margin-bottom: 30px; font-weight: bold;"></p>
+
+    <div class="subject-grid" id="main-grid"></div>
+
+    <footer>
+        Made By <b>Meoponly</b> for Podar community
+    </footer>
+
+    <script>
+        const examSchedule = [
+            { id: 'maths', name: "Maths", date: "06.03.2026", sections: { "Syllabus": ["Ch 1: Number Systems", "Ch 2: Polynomials", "Ch 3: Coordinate geometry", "Ch 4: Linear equations in two variables", "Ch 5: Introduction to Euclid's Geometry", "Ch 6: Lines and Angles", "Ch 7: Triangles", "Ch 8: Quadrilaterals", "Ch 9: Circles", "Ch 10: Heron's Formula", "Ch 11: Surface areas and volumes", "Ch 12: Statistics"] } },
+            { id: 'sst', name: "SST", date: "09.03.2026", sections: { "Economics": ["Ch 4: Food Security in India", "Ch 3: Poverty as a Challenge", "Ch 2: People as Resource"], "Geography": ["Ch 6: Population", "Ch 4: Climate", "Ch 2: Physical Features of India", "Ch 3: Drainage", "Ch 1: India Size and Location", "Ch 5: Natural Vegetation (Map)"], "Political Science": ["Ch 5: Democratic Rights", "Ch 3: Electoral Politics", "Ch 4: Working of Institutions", "Ch 2: Constitutional Design", "Ch 1: What is Democracy? Why Democracy?"], "History": ["Ch 3: Nazism and the Rise of Hitler", "Ch 1: The French Revolution", "Ch 2: Socialism in Europe", "Map Work: World & France"] } },
+            { id: 'english', name: "English", date: "11.03.2026", sections: { "Skills & Grammar": ["Reading: Discursive Passage", "Reading: Case-based Factual", "Writing: Descriptive", "Writing: Diary", "Writing: Story", "Grammar: Determiners", "Grammar: Tenses", "Grammar: Modals", "Grammar: Subject Verb Concord", "Grammar: Reported Speech"], "Beehive Prose": ["The Fun They Had", "The Sound of Music", "The Little Girl", "A Truly Beautiful Mind", "The Snake and the Mirror", "My Childhood", "Reach for the Top", "Kathmandu", "If I Were You"], "Beehive Poetry": ["The Road Not Taken", "Wind", "Rain on the Roof", "The Lake Isle of Innisfree", "A Legend of the Northland", "No Men Are Foreign", "On Killing a Tree", "A Slumber Did My Spirit Seal"], "Supplementary": ["The Lost Child", "The Adventures of Toto", "Iswaran the Storyteller", "In the Kingdom of Fools", "The Happy Prince", "The Last Leaf", "A House is not a Home", "The Beggar"] } },
+            { id: 'lang', isLanguage: true, date: "13.03.2026" },
+            { id: 'it', name: "IT-402", date: "14.03.2026", sections: { "Subject Skills": ["Introduction to IT-ITeS", "Data Entry & Keyboarding", "Digital Documentation", "Electronic Spreadsheet", "Digital Presentation"], "Employability": ["Communication Skills", "Self-Management Skills", "ICT Skills", "Entrepreneur skills", "Green skills"] } },
+            { id: 'science', isScience: true, name: "Science", date: "16.03.2026" }
+        ];
+
+        const scienceSections = { "Chemistry": ["Ch 1: Matter in Our Surroundings", "Ch 2: Is Matter Around Us Pure?", "Ch 3: Atoms and Molecules", "Ch 4: Structure of the Atom"], "Biology": ["Ch 5: Fundamental Unit of Life", "Ch 6: Tissues", "Ch 12: Improvement in Food Resources"], "Physics": ["Ch 7: Motion", "Ch 8: Force and Laws of Motion", "Ch 9: Gravitation", "Ch 10: Work and Energy", "Ch 11: Sound"] };
+        const languageSections = { "Hindi": { "गद्य": ["दुख का अधिकार", "एवरेस्टः मेरी शिखर यात्रा", "तुम कब जाओगे, अतिथि", "चंद्रशेखर वेंकट रामन्", "शुक्रतारे के समान"], "पद्य": ["रैदास के पद", "रहीम के दोहे", "गीत-अगीत", "अग्निपथ", "नए इलाके में/खुशबू रचते हैं"], "संचयन": ["गिल्लू", "स्मृति", "कल्लू कुम्हार की उनाकोटी", "मेरा छोटा-सा निजी पुस्तकालय"], "व्याकरण": ["शब्द और पद", "अनुस्वार/अनुनासिक", "उपसर्ग/प्रत्यय", "स्वर संधि", "विराम-चिह्न", "वाक्य भेद", "लेखन कार्य"] }, "Marathi": { "पाठ": ["बेटा मी ऐकतो आहे", "जी.आय.पी रेल्वे", "व्यायामाचे महत्व", "ऑलिंपिक वर्तुळाचा गोफ", "दिव्याच्या शोधामागचे दिव्य", "उजाड उघडे माळरानही", "कुलूप", "आभाळातल्या पाऊलवाटा", "पुन्हा एकदा", "तिफन", "माझे शिक्षक"], "इतर": ["संतवाणी", "व्हेनिस (स्थूल)", "विश्वकोश (स्थूल)", "व्याकरण व लेखन"] }, "Sanskrit": { "पठितावबोधनम्": ["भारतवसन्तगीति", "स्वर्णकाकः", "गोदोहनम्", "सुक्तिमौक्तिकम्", "भ्रान्तो बालः", "सिकतासेतुः", "जटायोः शौर्यम्", "पर्यावरणम्", "वाङमनः प्राणस्वरुपम्"], "व्याकरण": ["सन्धि", "प्रत्यया", "शब्द-धातु", "संख्या/अव्यय", "लेखन कौशल्यम्"] } };
+
+        function render() {
+            const grid = document.getElementById('main-grid');
+            grid.innerHTML = '';
+            const currentLang = localStorage.getItem('userLanguage') || 'Hindi';
+            const savedProgress = JSON.parse(localStorage.getItem('sherProgress')) || {};
+
+            examSchedule.forEach((item) => {
+                const card = document.createElement('div');
+                card.className = 'subject-card';
+                card.id = `card-${item.id}`;
+                
+                let titleContent = "";
+                if (item.isLanguage) {
+                    titleContent = `<select class="lang-inline-select" onchange="updateLang(this.value)">
+                        <option value="Hindi" ${currentLang === 'Hindi' ? 'selected' : ''}>Hindi</option>
+                        <option value="Marathi" ${currentLang === 'Marathi' ? 'selected' : ''}>Marathi</option>
+                        <option value="Sanskrit" ${currentLang === 'Sanskrit' ? 'selected' : ''}>Sanskrit</option>
+                    </select>`;
+                } else {
+                    titleContent = `<span>${item.name}</span>`;
+                }
+
+                let contentHtml = `
+                <div class="subject-title">
+                    <div style="display:flex; align-items:center;">
+                        ${titleContent}
+                        <button class="expand-btn" onclick="toggleCardSize(event, 'card-${item.id}')" title="Zoom">
+                            <svg viewBox="0 0 24 24"><path d="M21 3h-6.18c-.45 0-.82.37-.82.82v.36c0 .45.37.82.82.82H18.7l-4.97 4.97c-.32.32-.32.84 0 1.16.32.32.84.32 1.16 0L19.86 6.1v3.72c0 .45.37.82.82.82h.36c.45 0 .82-.37.82-.82V3c-.01-.4-.33-.72-.72-.73zM10.14 13.84c-.32-.32-.84-.32-1.16 0L4 18.84V15.1c0-.45-.37-.82-.82-.82h-.36c-.45 0-.82.37-.82.82v6.1c0 .41.33.74.74.74h6.1c.45 0 .82-.37.82-.82v-.36c0-.45-.37-.82-.82-.82H5.15l4.99-4.99c.32-.31.32-.83 0-1.15z"/></svg>
+                        </button>
+                    </div>
+                    <span class="date-badge">${item.date}</span>
+                </div>`;
+
+                let dataToRender = item.isScience ? scienceSections : (item.isLanguage ? languageSections[currentLang] : item.sections);
+
+                for (const sectionName in dataToRender) {
+                    contentHtml += `<div class="section-h">${sectionName}</div>`;
+                    dataToRender[sectionName].forEach((ch, idx) => {
+                        const uniqueId = `${item.id}-${sectionName}-${idx}`;
+                        contentHtml += `
+                            <div class="chapter-item" onclick="toggleProgress('${uniqueId}')">
+                                <input type="checkbox" id="${uniqueId}" ${savedProgress[uniqueId] ? 'checked' : ''}>
+                                <span class="chapter-name">${ch}</span>
+                            </div>`;
+                    });
+                }
+                card.innerHTML = contentHtml;
+                grid.appendChild(card);
+            });
+            updateStatsDisplay();
+        }
+
+        window.toggleCardSize = (event, id) => {
+            event.stopPropagation();
+            const el = document.getElementById(id);
+            const overlay = document.getElementById('overlay');
+            const isExpanded = el.classList.contains('expanded');
+            
+            closeAllCards(); // Close others first
+
+            if (!isExpanded) {
+                el.classList.add('expanded');
+                overlay.classList.add('active');
+                document.body.style.overflow = 'hidden'; // Stop background scrolling
+            }
+        };
+
+        window.closeAllCards = () => {
+            document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('expanded'));
+            document.getElementById('overlay').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        };
+
+        window.toggleProgress = (id) => {
+            const cb = document.getElementById(id);
+            cb.checked = !cb.checked;
+            const progress = JSON.parse(localStorage.getItem('sherProgress')) || {};
+            progress[id] = cb.checked;
+            localStorage.setItem('sherProgress', JSON.stringify(progress));
+            updateStatsDisplay();
+        };
+
+        function updateStatsDisplay() {
+            const all = document.querySelectorAll('input[type="checkbox"]');
+            const done = document.querySelectorAll('input[type="checkbox"]:checked');
+            const perc = all.length > 0 ? (done.length / all.length) * 100 : 0;
+            document.getElementById('progress-bar').style.width = perc + '%';
+            document.getElementById('stats').innerText = `Progress: ${done.length} / ${all.length} Chapters (${Math.round(perc)}%)`;
+        }
+
+        window.updateLang = (val) => { localStorage.setItem('userLanguage', val); render(); };
+        
+        render();
+    </script>
+</body>
+</html>
